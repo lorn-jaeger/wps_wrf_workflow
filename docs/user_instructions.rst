@@ -594,8 +594,7 @@ Monitoring and Troubleshooting
   * **Missing Python modules**: Ensure the Python 3.11 environment with
     required packages has been activated.
 
-  * **Slurm vs PBS scripts**: A warning :code:`check_job_status.sh` references
-    Slurm; it can be ignored or updated for PBS compatibility.
+  * **Slurm vs PBS scripts**: The :code:`check_job_status.sh` script is compatible with both Slurm and PBS schedulers.
 
 Reviewing Output
 ----------------

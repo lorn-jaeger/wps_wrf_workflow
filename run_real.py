@@ -220,10 +220,7 @@ def main(cycle_dt_beg, sim_hrs, wrf_dir, run_dir, metgrid_dir, tmp_dir, icbc_mod
     time.sleep(long_time)   # give the file system a moment
 
     ## Monitor the progress of real
-    if scheduler == 'slurm':
-        ret,output = exec_command([f'{curr_dir}/check_job_status.sh',jobid], log)
-    elif scheduler == 'pbs':
-        log.info('WARNING: check_job_status.sh needs to be modified to handle PBS calls')
+    ret,output = exec_command([f'{curr_dir}/check_job_status.sh',jobid,scheduler], log)
 
     status = False
     while not status:

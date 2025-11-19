@@ -258,10 +258,7 @@ def main(cycle_dt_beg, sim_hrs, wrf_dir, run_dir, tmp_dir, icbc_model, exp_name,
 
     time.sleep(long_time)   # give the file system a moment
 
-    if scheduler == 'slurm':
-        ret,output = exec_command([f'{curr_dir}/check_job_status.sh',jobid], log)
-    elif scheduler == 'pbs':
-        log.info('WARNING: check_job_status.sh needs to be modified to handle PBS calls')
+    ret,output = exec_command([f'{curr_dir}/check_job_status.sh',jobid,scheduler], log)
 
     ## Monitor the progress of wrf
     if monitor_wrf:

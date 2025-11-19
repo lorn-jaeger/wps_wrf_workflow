@@ -190,7 +190,7 @@ def main(cycle_dt: str, exp_name: str, run_dir: Path, working_dir: Path, output_
         # TODO: Remove after testing run_wrf process monitoring...
         log.info(f'    Checking job {jobid} status...')
 
-        ret, output = exec_command([f'{curr_dir}/check_job_status.sh', jobid], log)
+        ret, output = exec_command([f'{curr_dir}/check_job_status.sh', jobid, 'slurm'], log)
 
         # TODO: Remove after testing run_wrf process monitoring...
         log.info(f'        Got: {ret}')

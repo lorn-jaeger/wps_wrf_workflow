@@ -429,10 +429,7 @@ def main(cycle_dt_str, sim_hrs, wps_dir, run_dir, out_dir, grib_dir, temp_dir, i
 
         time.sleep(short_time)
 
-        if scheduler == 'slurm':
-            ret,output = exec_command([f'{curr_dir}/check_job_status.sh', jobid_list[tt]], log)
-        elif scheduler == 'pbs':
-            log.info('WARNING: check_job_status.sh needs to be modified to handle PBS calls')
+        ret,output = exec_command([f'{curr_dir}/check_job_status.sh', jobid_list[tt], scheduler], log)
 
         ## First, ensure the job is running/did run and created a log file
         status = False
@@ -652,10 +649,7 @@ def main(cycle_dt_str, sim_hrs, wps_dir, run_dir, out_dir, grib_dir, temp_dir, i
             ## First, ensure the job is running/did run and created a log file
             time.sleep(short_time)
 
-            if scheduler == 'slurm':
-                ret,output = exec_command([f'{curr_dir}/check_job_status.sh',jobid], log)
-            elif scheduler == 'pbs':
-                log.info('WARNING: check_job_status.sh needs to be modified to handle PBS calls')
+            ret,output = exec_command([f'{curr_dir}/check_job_status.sh',jobid,scheduler], log)
 
             status = False
             while not status:

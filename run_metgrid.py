@@ -272,10 +272,7 @@ def main(cycle_dt_beg, sim_hrs, wps_dir, run_dir, out_dir, ungrib_dir, tmp_dir, 
         sys.exit(1)
     time.sleep(long_time)   # give the file system a moment
 
-    if scheduler == 'slurm':
-        ret,output = exec_command([f'{curr_dir}/check_job_status.sh',jobid], log)
-    elif scheduler == 'pbs':
-        log.info('WARNING: check_jobs_status.sh needs to be modified to handle PBS calls')
+    ret,output = exec_command([f'{curr_dir}/check_job_status.sh',jobid,scheduler], log)
 
     ## Monitor the progress of metgrid
     status = False
