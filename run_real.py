@@ -47,6 +47,7 @@ def parse_args():
     parser.add_argument('-n', '--nml_tmp', default=None, help='string for filename of namelist template (default: namelist.input.icbc_model.exp_name, with icbc_model in lower-case)')
     parser.add_argument('-q', '--scheduler', default='pbs', help='string specifying the cluster job scheduler (default: pbs)')
     parser.add_argument('-a', '--hostname', default='derecho', help='string specifying the hostname (default: derecho')
+    parser.add_argument('-A', '--account', default=None, help='string specifying the account number (default: None)')
 
     args = parser.parse_args()
     cycle_dt_beg = args.cycle_dt_beg
@@ -60,6 +61,7 @@ def parse_args():
     nml_tmp = args.nml_tmp
     scheduler = args.scheduler
     hostname = args.hostname
+    account = args.account
 
     if len(cycle_dt_beg) != 11 or cycle_dt_beg[8] != '_':
         log.error('ERROR! Incorrect format for argument cycle_dt_beg in call to run_real.py. Exiting!')
@@ -91,10 +93,10 @@ def parse_args():
         else:
             nml_tmp = 'namelist.input.' + icbc_model.lower() + '.' + exp_name
 
-    return cycle_dt_beg, sim_hrs, wrf_dir, run_dir, metgrid_dir, tmp_dir, icbc_model, exp_name, nml_tmp, scheduler, hostname
+    return cycle_dt_beg, sim_hrs, wrf_dir, run_dir, metgrid_dir, tmp_dir, icbc_model, exp_name, nml_tmp, scheduler, hostname, account
 
 
-def main(cycle_dt_beg, sim_hrs, wrf_dir, run_dir, metgrid_dir, tmp_dir, icbc_model, exp_name, nml_tmp, scheduler, hostname):
+def main(cycle_dt_beg, sim_hrs, wrf_dir, run_dir, metgrid_dir, tmp_dir, icbc_model, exp_name, nml_tmp, scheduler, hostname, account):
     fmt_yyyymmdd_hh = '%Y%m%d_%H'
     fmt_yyyymmdd_hhmm = '%Y%m%d_%H%M'
     fmt_wrf_dt = '%Y-%m-%d_%H:%M:%S'
@@ -143,6 +145,13 @@ def main(cycle_dt_beg, sim_hrs, wrf_dir, run_dir, metgrid_dir, tmp_dir, icbc_mod
         shutil.copy(tmp_dir.joinpath('submit_real.bash.casper'), 'submit_real.bash')
     else:
         shutil.copy(tmp_dir.joinpath('submit_real.bash'), 'submit_real.bash')
+
+    if account is not None:
+        with open('submit_real.bash', 'r') as f:
+            content = f.read()
+        content = content.replace('ACCOUNT_NAME', account)
+        with open('submit_real.bash', 'w') as f:
+            f.write(content)
 
     ## Copy over the default namelist
     shutil.copy(tmp_dir.joinpath(nml_tmp), 'namelist.input.template')
@@ -265,8 +274,8 @@ def main(cycle_dt_beg, sim_hrs, wrf_dir, run_dir, metgrid_dir, tmp_dir, icbc_mod
 
 if __name__ == '__main__':
     now_time_beg = dt.datetime.now(dt.UTC)
-    cycle_dt, sim_hrs, wrf_dir, run_dir, metgrid_dir, tmp_dir, icbc_model, exp_name, nml_tmp, scheduler, hostname = parse_args()
-    main(cycle_dt, sim_hrs, wrf_dir, run_dir, metgrid_dir, tmp_dir, icbc_model, exp_name, nml_tmp, scheduler, hostname)
+    cycle_dt, sim_hrs, wrf_dir, run_dir, metgrid_dir, tmp_dir, icbc_model, exp_name, nml_tmp, scheduler, hostname, account = parse_args()
+    main(cycle_dt, sim_hrs, wrf_dir, run_dir, metgrid_dir, tmp_dir, icbc_model, exp_name, nml_tmp, scheduler, hostname, account)
     now_time_end = dt.datetime.now(dt.UTC)
     run_time_tot = now_time_end - now_time_beg
     now_time_beg_str = now_time_beg.strftime('%Y-%m-%d %H:%M:%S')

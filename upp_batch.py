@@ -62,7 +62,9 @@ def parse_args():
     parser.add_argument('-i', '--itag_template', default=None, help='string or Path to the UPP itag template file')
     parser.add_argument('-d', '--domain_idx', default=0, help='(optional) integer indicating a single domain to process from the wrfout files. Otherwise all domains are processed')
     parser.add_argument('-g', '--grib2_rsync_target', default='', help='(optional) string indicating directory for rsync of grib2 data')
+    parser.add_argument('-g', '--grib2_rsync_target', default='', help='(optional) string indicating directory for rsync of grib2 data')
     parser.add_argument('-N', '--no_cleanup', action="store_true", default=False, help='(optional) for debugging purposes, do not remove files in the temporary directory')
+    parser.add_argument('-A', '--account', default=None, help='string specifying the account number (default: None)')
 
     args = parser.parse_args()
 
@@ -85,7 +87,10 @@ def parse_args():
     params['itag_template'] = pathlib.Path(args.itag_template)
     params['domain_idx'] = args.domain_idx
     params['grib2_rsync_target'] = args.grib2_rsync_target
+    params['domain_idx'] = args.domain_idx
+    params['grib2_rsync_target'] = args.grib2_rsync_target
     params['no_cleanup'] = args.no_cleanup
+    params['account'] = args.account
 
     return params
 
@@ -127,7 +132,7 @@ def parseWrfoutFilename(rpath: str):
 
     return domain, year, month, day, hour, minute, second
 
-def main(exp_name: str, run_dir: Path, working_dir: Path, output_dir: Path, upp_dir: Path, itag_template: Path, domain_idx: int, grib2_rsync_target: str, no_cleanup: bool):
+def main(exp_name: str, run_dir: Path, working_dir: Path, output_dir: Path, upp_dir: Path, itag_template: Path, domain_idx: int, grib2_rsync_target: str, no_cleanup: bool, account: str):
 
     log.info(f'Running upp_batch.py from directory: {curr_dir}')
 

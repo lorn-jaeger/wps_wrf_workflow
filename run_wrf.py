@@ -47,6 +47,7 @@ def parse_args():
     parser.add_argument('-m', '--monitor_wrf', help='flag to keep the script active as long as wrf.exe is submitted/running on the cluster (True if flag present, False if not present)', action='store_true')
     parser.add_argument('-q', '--scheduler', default='pbs', help='string specifying the cluster job scheduler (default: pbs)')
     parser.add_argument('-a', '--hostname', default='derecho', help='string specifying the hostname (default: derecho')
+    parser.add_argument('-A', '--account', default=None, help='string specifying the account number (default: None)')
 
     args = parser.parse_args()
     cycle_dt_beg = args.cycle_dt_beg
@@ -59,6 +60,7 @@ def parse_args():
     nml_tmp = args.nml_tmp
     scheduler = args.scheduler
     hostname = args.hostname
+    account = args.account
 
     if len(cycle_dt_beg) != 11 or cycle_dt_beg[8] != '_':
         log.error('ERROR! Incorrect format for argument cycle_dt_beg in call to run_real.py. Exiting!')
@@ -94,9 +96,9 @@ def parse_args():
     if args.monitor_wrf:
         monitor_wrf = True
 
-    return cycle_dt_beg, sim_hrs, wrf_dir, run_dir, tmp_dir, icbc_model, exp_name, nml_tmp, monitor_wrf, scheduler, hostname
+    return cycle_dt_beg, sim_hrs, wrf_dir, run_dir, tmp_dir, icbc_model, exp_name, nml_tmp, monitor_wrf, scheduler, hostname, account
 
-def main(cycle_dt_beg, sim_hrs, wrf_dir, run_dir, tmp_dir, icbc_model, exp_name, nml_tmp, monitor_wrf, scheduler, hostname):
+def main(cycle_dt_beg, sim_hrs, wrf_dir, run_dir, tmp_dir, icbc_model, exp_name, nml_tmp, monitor_wrf, scheduler, hostname, account):
 
     log.info(f'Running run_wrf.py from directory: {curr_dir}')
 
@@ -145,6 +147,13 @@ def main(cycle_dt_beg, sim_hrs, wrf_dir, run_dir, tmp_dir, icbc_model, exp_name,
         shutil.copy(tmp_dir.joinpath('submit_wrf.bash.casper'), 'submit_wrf.bash')
     else:
         shutil.copy(tmp_dir.joinpath('submit_wrf.bash'), 'submit_wrf.bash')
+
+    if account is not None:
+        with open('submit_wrf.bash', 'r') as f:
+            content = f.read()
+        content = content.replace('ACCOUNT_NAME', account)
+        with open('submit_wrf.bash', 'w') as f:
+            f.write(content)
 
     ## Copy over the default namelist
     shutil.copy(tmp_dir.joinpath(nml_tmp), 'namelist.input.template')
@@ -308,8 +317,8 @@ def main(cycle_dt_beg, sim_hrs, wrf_dir, run_dir, tmp_dir, icbc_model, exp_name,
 
 if __name__ == '__main__':
     now_time_beg = dt.datetime.now(dt.UTC)
-    cycle_dt, sim_hrs, wrf_dir, run_dir, tmp_dir, icbc_model, exp_name, nml_tmp, monitor_wrf, scheduler, hostname = parse_args()
-    main(cycle_dt, sim_hrs, wrf_dir, run_dir, tmp_dir, icbc_model, exp_name, nml_tmp, monitor_wrf, scheduler, hostname)
+    cycle_dt, sim_hrs, wrf_dir, run_dir, tmp_dir, icbc_model, exp_name, nml_tmp, monitor_wrf, scheduler, hostname, account = parse_args()
+    main(cycle_dt, sim_hrs, wrf_dir, run_dir, tmp_dir, icbc_model, exp_name, nml_tmp, monitor_wrf, scheduler, hostname, account)
     now_time_end = dt.datetime.now(dt.UTC)
     run_time_tot = now_time_end - now_time_beg
     now_time_beg_str = now_time_beg.strftime('%Y-%m-%d %H:%M:%S')

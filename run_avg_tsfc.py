@@ -53,6 +53,7 @@ def parse_args():
                         help='string for filename of namelist template (default: namelist.wps.[icbc_model])')
     parser.add_argument('-v', '--hrrr_native', action='store_true',
                         help='If flag present, then use HRRR native-grid data for atmospheric variables')
+    parser.add_argument('-A', '--account', default=None, help='string specifying the account number (default: None)')
 
     args = parser.parse_args()
     cycle_dt_beg = args.cycle_dt_beg
@@ -63,7 +64,9 @@ def parse_args():
     tmp_dir = args.tmp_dir
     icbc_model = args.icbc_model
     nml_tmp = args.nml_tmp
+    nml_tmp = args.nml_tmp
     hrrr_native = args.hrrr_native
+    account = args.account
 
     if len(cycle_dt_beg) != 11 or cycle_dt_beg[8] != '_':
         log.error('ERROR! Incorrect format for argument cycle_dt_beg in call to run_metgrid.py. Exiting!')
@@ -107,9 +110,9 @@ def parse_args():
         ## Make a default assumption about what namelist template we want to use
         nml_tmp = 'namelist.wps.'+icbc_model.lower()
 
-    return (cycle_dt_beg, sim_hrs, wps_dir, run_dir, ungrib_dir, tmp_dir, icbc_model, nml_tmp, hrrr_native)
+    return (cycle_dt_beg, sim_hrs, wps_dir, run_dir, ungrib_dir, tmp_dir, icbc_model, nml_tmp, hrrr_native, account)
 
-def main(cycle_dt_beg, sim_hrs, wps_dir, run_dir, ungrib_dir, tmp_dir, icbc_model, nml_tmp, hrrr_native):
+def main(cycle_dt_beg, sim_hrs, wps_dir, run_dir, ungrib_dir, tmp_dir, icbc_model, nml_tmp, hrrr_native, account):
 
     log.info(f'Running run_avg_tsfc.py from directory: {curr_dir}')
 
@@ -202,8 +205,8 @@ def main(cycle_dt_beg, sim_hrs, wps_dir, run_dir, ungrib_dir, tmp_dir, icbc_mode
 
 if __name__ == '__main__':
     now_time_beg = dt.datetime.now(dt.UTC)
-    cycle_dt_beg, sim_hrs, wps_dir, run_dir, grib_dir, tmp_dir, icbc_model, nml_tmp, hrrr_native = parse_args()
-    main(cycle_dt_beg, sim_hrs, wps_dir, run_dir, grib_dir, tmp_dir, icbc_model, nml_tmp, hrrr_native)
+    cycle_dt_beg, sim_hrs, wps_dir, run_dir, grib_dir, tmp_dir, icbc_model, nml_tmp, hrrr_native, account = parse_args()
+    main(cycle_dt_beg, sim_hrs, wps_dir, run_dir, grib_dir, tmp_dir, icbc_model, nml_tmp, hrrr_native, account)
     now_time_end = dt.datetime.now(dt.UTC)
     run_time_tot = now_time_end - now_time_beg
     now_time_beg_str = now_time_beg.strftime('%Y-%m-%d %H:%M:%S')

@@ -58,6 +58,7 @@ def parse_args():
      'upp_dir': 'string or Path object of the UPP install directory (default: ./)',
      'itag_template': 'string or Path object referring to itag template file',
      'sbatch_template': 'string or Path object referring to upp sbatch template file',
+     'account': 'string specifying the account number (default: None)',
      #Add new parameters here
     }
 
@@ -70,7 +71,9 @@ def parse_args():
     parser.add_argument('-x', '--exp_name', default=None, help='string indicating the experiment name -- used for naming files and directories')
     parser.add_argument('-c', '--config', required=True, help=f"yaml configuration file\n{yaml.dump(yaml_config_help, default_flow_style=False)}")
     parser.add_argument('-d', '--domains', default=[], type=list_of_ints, help='(optional) comma-separated list of integers indicating domains to process from the wrfout files. Otherwise all domains are processed')
+    parser.add_argument('-d', '--domains', default=[], type=list_of_ints, help='(optional) comma-separated list of integers indicating domains to process from the wrfout files. Otherwise all domains are processed')
     parser.add_argument('-N', '--no_cleanup', action="store_true", help='(optional) for debugging purposes, do not remove files in the temporary directory')
+    parser.add_argument('-A', '--account', default=None, help='string specifying the account number (default: None)')
 
     args = parser.parse_args()
 
@@ -105,7 +108,10 @@ def parse_args():
     params.setdefault('domains', []) # empty list == process all domains
     params.setdefault('do_grib2_rsync', False)
     params.setdefault('grib2_rsync_target', '')
+    params.setdefault('do_grib2_rsync', False)
+    params.setdefault('grib2_rsync_target', '')
     params.setdefault('no_cleanup', False)
+    params.setdefault('account', None)
 
     # TODO: Check that the cycle_dt is realistic...
 
@@ -121,7 +127,10 @@ def parse_args():
     params['run_dir'] = pathlib.Path(args.run_dir)
     params['exp_name'] = args.exp_name
     params['domains'] = args.domains
+    params['domains'] = args.domains
     params['no_cleanup'] = args.no_cleanup
+    if args.account is not None:
+        params['account'] = args.account
 
     return params
 
@@ -159,14 +168,14 @@ def parseWrfoutFilename(rpath: str):
 
     return domain, year, month, day, hour, minute, second
 
-def main(cycle_dt: str, exp_name: str, run_dir: Path, working_dir: Path, output_dir: Path, upp_dir: Path, itag_template: Path, sbatch_template: Path, domains: list[int], do_grib2_rsync: bool, grib2_rsync_target: str, no_cleanup: bool):
+def main(cycle_dt: str, exp_name: str, run_dir: Path, working_dir: Path, output_dir: Path, upp_dir: Path, itag_template: Path, sbatch_template: Path, domains: list[int], do_grib2_rsync: bool, grib2_rsync_target: str, no_cleanup: bool, account: str):
 
     # Get a full path to this script, so it can be put in the sbatch file.
     this_path = pathlib.Path(__file__).parent.resolve()
     upp_batch_path = os.path.join(this_path, "upp_batch.py")
 
     # Create submit_upp.bash script(s)
-    submitfile_paths = create_sbatch_files_from_tmpl(sbatch_template, cycle_dt, upp_batch_path, run_dir, exp_name, working_dir, output_dir, upp_dir, itag_template, domains, do_grib2_rsync, grib2_rsync_target, no_cleanup)
+    submitfile_paths = create_sbatch_files_from_tmpl(sbatch_template, cycle_dt, upp_batch_path, run_dir, exp_name, working_dir, output_dir, upp_dir, itag_template, domains, do_grib2_rsync, grib2_rsync_target, no_cleanup, account)
 
     # Submit the jobs to sbatch
     submitted_jobids = []
@@ -265,22 +274,22 @@ def main(cycle_dt: str, exp_name: str, run_dir: Path, working_dir: Path, output_
     return success
 
 
-def create_sbatch_files_from_tmpl(submit_upp_tmpl: pathlib.Path, cycle_str: str, run_upp_script: pathlib.Path, wrf_run_dir: pathlib.Path, exp_name: str, working_dir: pathlib.Path, output_dir: pathlib.Path, upp_dir: pathlib.Path, itag_tmpl: pathlib.Path, domains: list[str], do_grib2_rsync: bool, grib2_rsync_target: str, no_cleanup: bool):
+def create_sbatch_files_from_tmpl(submit_upp_tmpl: pathlib.Path, cycle_str: str, run_upp_script: pathlib.Path, wrf_run_dir: pathlib.Path, exp_name: str, working_dir: pathlib.Path, output_dir: pathlib.Path, upp_dir: pathlib.Path, itag_tmpl: pathlib.Path, domains: list[str], do_grib2_rsync: bool, grib2_rsync_target: str, no_cleanup: bool, account: str):
     submitfile_paths = []
 
     if domains and len(domains) > 0 and domains[0] > 0:
         for domain in domains:
             submit_file_path = f'submit_upp_{cycle_str}_{exp_name}_d0{domain}.bash'
-            fill_tmpl_wildcards(submit_upp_tmpl, submit_file_path, run_upp_script, wrf_run_dir, exp_name, working_dir, output_dir, upp_dir, itag_tmpl, str(domain), do_grib2_rsync, grib2_rsync_target, no_cleanup)
+            fill_tmpl_wildcards(submit_upp_tmpl, submit_file_path, run_upp_script, wrf_run_dir, exp_name, working_dir, output_dir, upp_dir, itag_tmpl, str(domain), do_grib2_rsync, grib2_rsync_target, no_cleanup, account)
             submitfile_paths.append(submit_file_path)
     else:
         submit_file_path = f'submit_upp_{cycle_str}_{exp_name}.bash'
-        fill_tmpl_wildcards(submit_upp_tmpl, submit_file_path, run_upp_script, wrf_run_dir, exp_name, working_dir, output_dir, upp_dir, itag_tmpl, '', do_grib2_rsync, grib2_rsync_target, no_cleanup)
+        fill_tmpl_wildcards(submit_upp_tmpl, submit_file_path, run_upp_script, wrf_run_dir, exp_name, working_dir, output_dir, upp_dir, itag_tmpl, '', do_grib2_rsync, grib2_rsync_target, no_cleanup, account)
         submitfile_paths.append(submit_file_path)
 
     return submitfile_paths
 
-def fill_tmpl_wildcards(tmpl_path: str, submit_file_path: str, run_upp_script: pathlib.Path, wrf_run_dir: pathlib.Path, exp_name: str, working_dir: pathlib.Path, output_dir: pathlib.Path, upp_dir: pathlib.Path, itag_tmpl: pathlib.Path, domain: str, do_grib2_rsync: bool, grib2_rsync_target: str, no_cleanup: bool):
+def fill_tmpl_wildcards(tmpl_path: str, submit_file_path: str, run_upp_script: pathlib.Path, wrf_run_dir: pathlib.Path, exp_name: str, working_dir: pathlib.Path, output_dir: pathlib.Path, upp_dir: pathlib.Path, itag_tmpl: pathlib.Path, domain: str, do_grib2_rsync: bool, grib2_rsync_target: str, no_cleanup: bool, account: str):
     tmpl = open(tmpl_path, 'r')
     submit_file = open(submit_file_path, 'w')
     for line in tmpl:
@@ -291,7 +300,10 @@ def fill_tmpl_wildcards(tmpl_path: str, submit_file_path: str, run_upp_script: p
         line = line.replace("WORKING_DIR", str(working_dir))
         line = line.replace("OUTPUT_DIR", str(output_dir))
         line = line.replace("UPP_DIR", str(upp_dir))
+        line = line.replace("UPP_DIR", str(upp_dir))
         line = line.replace("ITAG_TEMPLATE", str(itag_tmpl))
+        if account is not None:
+            line = line.replace("ACCOUNT_NAME", account)
         if do_grib2_rsync and len(grib2_rsync_target) > 2:
             line = line.replace("GRIB2_RSYNC_ARGS", f'-g {grib2_rsync_target}')
         else:

@@ -70,6 +70,7 @@ def parse_args():
      'do_real':     'flag to run real for this case',
      'do_wrf':      'flag to submit wrf for this case',
      'do_upp':      'flag to perform UPP post-processing to grib2 for this case',
+     'account':     'account name for batch job submission (default: None)',
      #Add new parameters here
     }
 
@@ -142,6 +143,7 @@ def parse_args():
     params.setdefault('do_real', False)
     params.setdefault('do_wrf', False)
     params.setdefault('do_upp', False)
+    params.setdefault('account', None)
 
     params.setdefault('geos5_int_dir', None)
     params.setdefault('use_geos5_aer_fcst', False)
@@ -166,7 +168,9 @@ def parse_args():
     del params['arc_dir']
     params['upp_working_dir'] = pathlib.Path(params['upp_working_dir'])
     params['upp_yaml'] = pathlib.Path(params['upp_yaml'])
+    params['upp_yaml'] = pathlib.Path(params['upp_yaml'])
     params['archive'] = params['archive']
+    params['account'] = params['account']
     if params['geos5_int_dir'] is not None:
         params['geos5_int_dir_parent'] = pathlib.Path(params['geos5_int_dir'])
     else:
@@ -192,7 +196,7 @@ def main(cycle_dt_str_beg, cycle_dt_str_end, cycle_int_h, sim_hrs, icbc_fc_dt, e
          wps_run_dir_parent, wrf_run_dir_parent, template_dir, arc_dir_parent,
          geos5_int_dir_parent, use_geos5_aer_fcst, use_geos5_aer_anal,
          upp_working_dir, upp_yaml, upp_domains,
-         get_icbc, do_geogrid, do_ungrib, do_avg_tsfc, use_tavgsfc, do_metgrid, do_real, do_wrf, do_upp):
+         get_icbc, do_geogrid, do_ungrib, do_avg_tsfc, use_tavgsfc, do_metgrid, do_real, do_wrf, do_upp, account):
 
     ## String format statements
     fmt_int_fmt_date        = '%Y-%m-%d_%H'
@@ -494,12 +498,18 @@ def main(cycle_dt_str_beg, cycle_dt_str_end, cycle_int_h, sim_hrs, icbc_fc_dt, e
         if do_geogrid:
             cmd_list = ['python', 'run_geogrid.py', '-w', wps_ins_dir, '-r', geo_run_dir, '-t', template_dir,
                  '-n', wps_nml_tmp, '-q', scheduler, '-a', hostname]
+            if account is not None:
+                cmd_list.append('-A')
+                cmd_list.append(account)
             ret, output = exec_command(cmd_list, log)
 
         if do_ungrib:
             cmd_list = ['python', 'run_ungrib.py', '-b', cycle_str, '-s', str(sim_hrs), '-w', wps_ins_dir,
                         '-r', wps_run_dir, '-o', ungrib_dir, '-t', template_dir, '-m', icbc_model, '-n', wps_nml_tmp,
                         '-i', str(int_hrs), '-q', scheduler, '-f', str(icbc_fc_dt), '-a', hostname, '-c', icbc_source]
+            if account is not None:
+                cmd_list.append('-A')
+                cmd_list.append(account)
 
             # For some IC/LBC models the gribfiles are stored in date directories, not cycle hour directories
             # So pass in grib_dir_parent instead. run_ungrib.py handles grib_dir for these models differently.
@@ -522,6 +532,9 @@ def main(cycle_dt_str_beg, cycle_dt_str_end, cycle_int_h, sim_hrs, icbc_fc_dt, e
         if do_avg_tsfc:
             cmd_list = ['python', 'run_avg_tsfc.py', '-b', cycle_str, '-s', str(sim_hrs), '-w', wps_ins_dir,
                         '-r', wps_run_dir, '-u', ungrib_dir, '-t', template_dir, '-m', icbc_model, '-n', wps_nml_tmp]
+            if account is not None:
+                cmd_list.append('-A')
+                cmd_list.append(account)
             if hrrr_native:
                 cmd_list.append('-v')
             ret, output = exec_command(cmd_list, log)
@@ -632,6 +645,9 @@ def main(cycle_dt_str_beg, cycle_dt_str_end, cycle_int_h, sim_hrs, icbc_fc_dt, e
             cmd_list = ['python', 'run_metgrid.py', '-b', cycle_str, '-s', str(sim_hrs), '-w', wps_ins_dir,
                         '-r', wps_run_dir, '-o', metgrid_dir, '-u', ungrib_dir, '-t', template_dir, '-m', icbc_model,
                         '-q', scheduler, '-a', hostname, '-n', wps_nml_tmp]
+            if account is not None:
+                cmd_list.append('-A')
+                cmd_list.append(account)
             if hrrr_native:
                 cmd_list.append('-v')
             if use_tavgsfc:
@@ -646,6 +662,9 @@ def main(cycle_dt_str_beg, cycle_dt_str_end, cycle_int_h, sim_hrs, icbc_fc_dt, e
             cmd_list = ['python', 'run_real.py', '-b', cycle_str, '-s', str(sim_hrs), '-w', wrf_ins_dir,
                      '-r', wrf_run_dir, '-m', metgrid_dir, '-t', template_dir, '-i', icbc_model, '-n', wrf_nml_tmp,
                      '-q', scheduler, '-a', hostname]
+            if account is not None:
+                cmd_list.append('-A')
+                cmd_list.append(account)
             if exp_name is not None:
                 cmd_list.append('-x')
                 cmd_list.append(exp_name)
@@ -655,6 +674,9 @@ def main(cycle_dt_str_beg, cycle_dt_str_end, cycle_int_h, sim_hrs, icbc_fc_dt, e
             cmd_list = ['python', 'run_wrf.py', '-b', cycle_str, '-s', str(sim_hrs), '-w', wrf_ins_dir,
                         '-r', wrf_run_dir, '-t', template_dir, '-i', icbc_model, '-n', wrf_nml_tmp,
                         '-q', scheduler, '-a', hostname]
+            if account is not None:
+                cmd_list.append('-A')
+                cmd_list.append(account)
             if exp_name is not None:
                 cmd_list.append('-x')
                 cmd_list.append(exp_name)
@@ -664,6 +686,9 @@ def main(cycle_dt_str_beg, cycle_dt_str_end, cycle_int_h, sim_hrs, icbc_fc_dt, e
 
         if do_upp:
             cmd_list = ['python', 'run_upp.py', '-b', cycle_str, '-r', wrf_run_dir, '-c', upp_yaml, '-N']
+            if account is not None:
+                cmd_list.append('-A')
+                cmd_list.append(account)
             if exp_name is not None:
                 cmd_list.append('-x')
                 cmd_list.append(exp_name)

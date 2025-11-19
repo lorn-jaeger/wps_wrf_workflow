@@ -39,6 +39,7 @@ def parse_args():
 	parser.add_argument('-n', '--nml_tmp', default=None, help='string for filename of namelist template (default: namelist.wps)')
 	parser.add_argument('-q', '--scheduler', default='pbs', help='string specifying the cluster job scheduler (default: pbs)')
 	parser.add_argument('-a', '--hostname', default='derecho', help='string specifying the hostname (default: derecho')
+	parser.add_argument('-A', '--account', default=None, help='string specifying the account number (default: None)')
 
 	args = parser.parse_args()
 	wps_dir = args.wps_dir
@@ -47,6 +48,7 @@ def parse_args():
 	nml_tmp = args.nml_tmp
 	scheduler = args.scheduler
 	hostname = args.hostname
+	account = args.account
 
 	if wps_dir is not None:
 		wps_dir = pathlib.Path(wps_dir)
@@ -70,9 +72,9 @@ def parse_args():
 		## Make a default assumption about what namelist template we want to use
 		nml_tmp = 'namelist.wps'
 
-	return wps_dir, run_dir, tmp_dir, nml_tmp, scheduler, hostname
+	return wps_dir, run_dir, tmp_dir, nml_tmp, scheduler, hostname, account
 
-def main(wps_dir, run_dir, tmp_dir, nml_tmp, scheduler, hostname):
+def main(wps_dir, run_dir, tmp_dir, nml_tmp, scheduler, hostname, account):
 
 	## Create the run directory if it doesn't already exist
 	run_dir.mkdir(parents=True, exist_ok=True)
@@ -93,6 +95,13 @@ def main(wps_dir, run_dir, tmp_dir, nml_tmp, scheduler, hostname):
 		shutil.copy(tmp_dir.joinpath('submit_geogrid.bash.casper'), 'submit_geogrid.bash')
 	else:
 		shutil.copy(tmp_dir.joinpath('submit_geogrid.bash'), 'submit_geogrid.bash')
+
+	if account is not None:
+		with open('submit_geogrid.bash', 'r') as f:
+			content = f.read()
+		content = content.replace('ACCOUNT_NAME', account)
+		with open('submit_geogrid.bash', 'w') as f:
+			f.write(content)
 
 
 	## Copy over the default namelist
@@ -176,8 +185,8 @@ def main(wps_dir, run_dir, tmp_dir, nml_tmp, scheduler, hostname):
 
 if __name__ == '__main__':
 	now_time_beg = dt.datetime.now(dt.UTC)
-	wps_dir, run_dir, tmp_dir, nml_tmp, scheduler, hostname = parse_args()
-	main(wps_dir, run_dir, tmp_dir, nml_tmp, scheduler, hostname)
+	wps_dir, run_dir, tmp_dir, nml_tmp, scheduler, hostname, account = parse_args()
+	main(wps_dir, run_dir, tmp_dir, nml_tmp, scheduler, hostname, account)
 	now_time_end = dt.datetime.now(dt.UTC)
 	run_time_tot = now_time_end - now_time_beg
 	now_time_beg_str = now_time_beg.strftime('%Y-%m-%d %H:%M:%S')

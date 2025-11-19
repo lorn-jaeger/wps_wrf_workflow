@@ -55,6 +55,7 @@ def parse_args():
                         help='string or pathlib.Path object of the directory with GEOS-5 Intermediate Format files')
     parser.add_argument('-f', '--use_geos5_aero', action='store_true',
                         help='If flag present, then use time-varying aerosol inputs from GEOS-5 forecasts or analyses')
+    parser.add_argument('-A', '--account', default=None, help='string specifying the account number (default: None)')
 
     args = parser.parse_args()
     cycle_dt_beg = args.cycle_dt_beg
@@ -72,6 +73,7 @@ def parse_args():
     use_tavgsfc = args.use_tavgsfc
     geos5_int_dir = args.geos5_int_dir
     use_geos5_aero = args.use_geos5_aero
+    account = args.account
 
     if len(cycle_dt_beg) != 11 or cycle_dt_beg[8] != '_':
         log.error('ERROR! Incorrect format for argument cycle_dt_beg in call to run_metgrid.py. Exiting!')
@@ -113,10 +115,10 @@ def parse_args():
         nml_tmp = 'namelist.wps.'+icbc_model.lower()
 
     return (cycle_dt_beg, sim_hrs, wps_dir, run_dir, out_dir, ungrib_dir, tmp_dir, icbc_model, nml_tmp, scheduler,
-            hostname, hrrr_native, use_tavgsfc, geos5_int_dir, use_geos5_aero)
+            hostname, hrrr_native, use_tavgsfc, geos5_int_dir, use_geos5_aero, account)
 
 def main(cycle_dt_beg, sim_hrs, wps_dir, run_dir, out_dir, ungrib_dir, tmp_dir, icbc_model, nml_tmp, scheduler,
-         hostname, hrrr_native, use_tavgsfc, geos5_int_dir, use_geos5_aero):
+         hostname, hrrr_native, use_tavgsfc, geos5_int_dir, use_geos5_aero, account):
 
     log.info(f'Running run_metgrid.py from directory: {curr_dir}')
 
@@ -165,6 +167,13 @@ def main(cycle_dt_beg, sim_hrs, wps_dir, run_dir, out_dir, ungrib_dir, tmp_dir, 
         shutil.copy(tmp_dir.joinpath('submit_metgrid.bash.casper'), 'submit_metgrid.bash')
     else:
         shutil.copy(tmp_dir.joinpath('submit_metgrid.bash'), 'submit_metgrid.bash')
+
+    if account is not None:
+        with open('submit_metgrid.bash', 'r') as f:
+            content = f.read()
+        content = content.replace('ACCOUNT_NAME', account)
+        with open('submit_metgrid.bash', 'w') as f:
+            f.write(content)
 
     ## Copy over the default namelist
     shutil.copy(tmp_dir.joinpath(nml_tmp), 'namelist.wps.template')
@@ -307,9 +316,9 @@ def main(cycle_dt_beg, sim_hrs, wps_dir, run_dir, out_dir, ungrib_dir, tmp_dir, 
 if __name__ == '__main__':
     now_time_beg = dt.datetime.now(dt.UTC)
     (cycle_dt, sim_hrs, wps_dir, run_dir, out_dir, grib_dir, tmp_dir, icbc_model, nml_tmp, scheduler, hostname,
-     hrrr_native, use_tavgsfc, geos5_int_dir, use_geos5_aer_fcst) = parse_args()
+     hrrr_native, use_tavgsfc, geos5_int_dir, use_geos5_aer_fcst, account) = parse_args()
     main(cycle_dt, sim_hrs, wps_dir, run_dir, out_dir, grib_dir, tmp_dir, icbc_model, nml_tmp, scheduler, hostname,
-         hrrr_native, use_tavgsfc, geos5_int_dir, use_geos5_aer_fcst)
+         hrrr_native, use_tavgsfc, geos5_int_dir, use_geos5_aer_fcst, account)
     now_time_end = dt.datetime.now(dt.UTC)
     run_time_tot = now_time_end - now_time_beg
     now_time_beg_str = now_time_beg.strftime('%Y-%m-%d %H:%M:%S')
